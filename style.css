@@ -3,10 +3,15 @@
   box-sizing: border-box;
 }
 
+html {
+  background: #ffffff;
+}
+
 body {
   margin: 0;
-  background: #fff;
-  color: #000;
+  padding: 0;
+  background: #ffffff;
+  color: #000000;
   font-family: Arial, sans-serif;
   font-size: 17px;
   line-height: 1.5;
@@ -15,24 +20,25 @@ body {
 .header {
   padding: 15px 10px;
   text-align: center;
-  border-bottom: 2px solid #000;
+  border-bottom: 2px solid #000000;
 }
 
 .header h1 {
-  font-size: 27px;
   margin: 0 0 12px;
+  font-size: 27px;
 }
 
 .counters {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  width: 100%;
   max-width: 500px;
   margin: auto;
+  gap: 10px;
 }
 
 .counter {
-  border: 1px solid #000;
+  flex: 1;
+  border: 1px solid #000000;
   padding: 8px 4px;
 }
 
@@ -42,100 +48,136 @@ body {
 }
 
 .counter span {
+  display: block;
   font-size: 13px;
 }
 
 .navigation {
   display: flex;
-  overflow-x: auto;
-  border-bottom: 2px solid #000;
-  background: #fff;
-  scrollbar-width: thin;
-}
-
-.navigation {
-  display: flex;
   flex-wrap: wrap;
-  border-bottom: 2px solid black;
-  background: white;
+  padding: 4px;
+  border-bottom: 2px solid #000000;
+  background: #ffffff;
 }
 
-.navigation a {
+.navigation button {
   display: block;
   flex: 1 1 30%;
-  padding: 12px 5px;
-  margin: 2px;
-  border: 1px solid black;
-  color: black;
-  background: white;
-  text-align: center;
-  text-decoration: none;
+  min-width: 95px;
+  min-height: 48px;
+  margin: 3px;
+  padding: 8px 5px;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #000000;
   font-size: 14px;
   font-weight: bold;
 }
 
+.navigation button.active {
+  background: #000000;
+  color: #ffffff;
+}
+
 main {
+  width: 100%;
   max-width: 650px;
+  min-height: 350px;
   margin: auto;
   padding: 15px;
-  min-height: 350px;
 }
+
 
 .section {
   display: none;
   padding: 10px 0;
 }
 
+#nuevoLibro {
+  display: block;
+}
+
 .section.visible {
   display: block;
 }
 
-.section.active {
-  display: block;
+.navigation button {
+  min-width: 95px;
+  min-height: 48px;
+  padding: 10px 5px;
+  margin: 3px;
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #000000;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.navigation button.active {
+  background-color: #000000;
+  color: #ffffff;
 }
 
 h2 {
-  font-size: 22px;
   margin: 5px 0 20px;
+  font-size: 22px;
+}
+
+h3 {
+  margin: 0 0 5px;
+  font-size: 19px;
 }
 
 label {
   display: block;
-  font-weight: bold;
   margin: 14px 0 5px;
+  font-weight: bold;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
+  display: block;
   width: 100%;
   min-height: 45px;
   padding: 10px;
-  border: 1px solid #000;
-  border-radius: 3px;
-  background: white;
-  color: black;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #000000;
+  font-family: Arial, sans-serif;
   font-size: 16px;
-  font-family: inherit;
 }
 
-button, .import-label {
+textarea {
+  resize: vertical;
+}
+
+button {
+  cursor: pointer;
+}
+
+form > button,
+#exportButton,
+.import-label {
   display: block;
   width: 100%;
   min-height: 45px;
   margin-top: 14px;
   padding: 10px;
-  background: #000;
-  color: #fff;
-  border: 2px solid #000;
-  border-radius: 3px;
+  border: 2px solid #000000;
+  border-radius: 2px;
+  background: #000000;
+  color: #ffffff;
   font-size: 16px;
   font-weight: bold;
   text-align: center;
-  cursor: pointer;
 }
 
-button.secondary {
-  background: white;
-  color: black;
+form > button.secondary {
+  background: #ffffff;
+  color: #000000;
 }
 
 .hidden {
@@ -143,15 +185,10 @@ button.secondary {
 }
 
 .book-card {
-  border: 1px solid #000;
-  padding: 13px;
   margin: 12px 0;
+  padding: 13px;
+  border: 1px solid #000000;
   overflow-wrap: anywhere;
-}
-
-.book-card h3 {
-  font-size: 19px;
-  margin: 0 0 5px;
 }
 
 .book-card p {
@@ -165,13 +202,24 @@ button.secondary {
 
 .book-actions button {
   flex: 1;
+  min-height: 42px;
+  margin-top: 10px;
+  padding: 7px;
+  border: 1px solid #000000;
+  background: #000000;
+  color: #ffffff;
   font-size: 14px;
 }
 
+.book-actions button.secondary {
+  background: #ffffff;
+  color: #000000;
+}
+
 .year-summary {
-  border: 1px solid #000;
   margin: 20px 0;
   padding: 12px;
+  border: 1px solid #000000;
   text-align: center;
 }
 
@@ -180,18 +228,20 @@ button.secondary {
   font-size: 27px;
 }
 
-.backup {
-  margin-top: 15px;
+.import-label {
+  cursor: pointer;
 }
 
 #message {
   margin-top: 15px;
   font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 footer {
-  border-top: 1px solid #000;
+  margin-top: 20px;
   padding: 12px;
+  border-top: 1px solid #000000;
   text-align: center;
   font-size: 13px;
 }
@@ -206,7 +256,7 @@ footer {
   }
 
   .navigation button {
-    min-width: 95px;
+    min-width: 90px;
     font-size: 13px;
   }
 }

@@ -1,11 +1,21 @@
 
-const $ = id => document.getElementById(id);
+var $ = function(id) {
+  return document.getElementById(id);
+};
 
-let books = [];
-let readings = [];
-let selectedYear = new Date().getFullYear();
+var books = [];
+var readings = [];
+var selectedYear = new Date().getFullYear();
 
-const labels = {
+var sectionNames = [
+  "nuevoLibro",
+  "biblioteca",
+  "nuevaLectura",
+  "lecturas",
+  "copias"
+];
+
+var statusNames = {
   pendiente: "Pendiente",
   leyendo: "Leyendo",
   leido: "Leído",
@@ -14,75 +24,115 @@ const labels = {
 
 function createId() {
   return Date.now().toString(36) +
-    Math.random().toString(36).slice(2);
+    Math.random().toString(36).substring(2);
 }
 
 function safe(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[c]);
+  return String(value || "").replace(/[&<>"']/g, function(c) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[c];
+  });
 }
 
-// NAVEGACIÓN
+/* NAVEGACION */
 
-const sectionNames = [
-  "nuevoLibro",
-  "biblioteca",
-  "nuevaLectura",
-  "lecturas",
-  "copias"
-];
+function showSection(id) {
 
-function showSection(sectionId) {
+  var i;
+  var section;
+  var buttons;
 
-  if (sectionNames.indexOf(sectionId) === -1) {
-    sectionId = "nuevoLibro";
-  }
+  for (i = 0; i < sectionNames.length; i++) {
 
-  sectionNames.forEach(id => {
-    const section = document.getElementById(id);
+    section = $(sectionNames[i]);
 
     if (section) {
-      section.className = "section";
       section.style.display = "none";
     }
-  });
-
-  const selected = document.getElementById(sectionId);
-
-  if (selected) {
-    selected.className = "section visible";
-    selected.style.display = "block";
   }
+
+  buttons = document.getElementsByTagName("button");
+
+  for (i = 0; i < buttons.length; i++) {
+
+    if (buttons[i].getAttribute("data-section")) {
+      buttons[i].style.backgroundColor = "#ffffff";
+      buttons[i].style.color = "#000000";
+    }
+  }
+
+  section = $(id);
+
+  if (!section) {
+    id = "nuevoLibro";
+    section = $(id);
+  }
+
+  if (section) {
+    section.style.display = "block";
+  }
+
+  for (i = 0; i < buttons.length; i++) {
+
+    if (buttons[i].getAttribute("data-section") === id) {
+      buttons[i].style.backgroundColor = "#000000";
+      buttons[i].style.color = "#ffffff";
+    }
+  }
+
+  window.scrollTo(0, 0);
 }
 
-// Navegación mediante enlaces
+/* ACTIVAR NAVEGACION INMEDIATAMENTE */
 
-document.querySelectorAll(".navigation a").forEach(link => {
+function setupNavigation() {
 
-  link.addEventListener("click", function(event) {
-    event.preventDefault();
+  var buttons = document.getElementsByTagName("button");
+  var i;
 
-    const sectionId = this.getAttribute("href").substring(1);
+  for (i = 0; i < buttons.length; i++) {
 
-    showSection(sectionId);
+    if (buttons[i].getAttribute("data-section")) {
 
-    history.replaceState(null, "", "#" + sectionId);
-  });
+      buttons[i].onclick = function() {
+        showSection(this.getAttribute("data-section"));
+        return false;
+      };
 
-});
+    }
+  }
 
-// Mostrar sección inicial
+  showSection("nuevoLibro");
+}
 
-showSection("nuevoLibro");
+setupNavigation();
 
-// CARGAR DATOS
+/* ACTUALIZAR CONTADORES */
+
+function updateCounters() {
+
+  $("totalBooks").textContent = books.length;
+
+  var count = 0;
+
+  for (var i = 0; i < readings.length; i++) {
+    if (Number(readings[i].year) === selectedYear) {
+      count++;
+    }
+  }
+
+  $("totalReadings").textContent = count;
+}
+
+/* ACTUALIZAR DATOS */
 
 async function refresh() {
+
   books = await Database.getBooks();
   readings = await Database.getReadings();
 
@@ -90,77 +140,33 @@ async function refresh() {
   renderReadingOptions();
   renderReadings();
   updateCounters();
+
 }
 
-// ENCABEZADO
-
-function updateCounters() {
-  $("totalBooks").textContent = books.length;
-
-  const count = readings.filter(item =>
-    Number(item.year) === selectedYear
-  ).length;
-
-  $("totalReadings").textContent = count;
-}
-
-// BIBLIOTECA
-
-function renderBooks() {
-  const search = $("searchBooks").value.toLowerCase().trim();
-
-  const filtered = books.filter(book =>
-    `${book.title} ${book.author}`.toLowerCase().includes(search)
-  );
-
-  $("bookList").innerHTML = filtered.length
-    ? filtered.map(book => `
-      <article class="book-card">
-        <h3>${safe(book.title)}</h3>
-
-        <p>${safe(book.author)}</p>
-
-        <p><strong>Estado:</strong>
-          ${labels[book.status] || "Pendiente"}
-        </p>
-
-        ${book.note ? `
-          <p><strong>Nota:</strong>
-            ${safe(book.note)}
-          </p>
-        ` : ""}
-
-        <div class="book-actions">
-          <button data-action="edit"
-                  data-id="${safe(book.id)}">
-            Editar
-          </button>
-
-          <button class="secondary"
-                  data-action="delete"
-                  data-id="${safe(book.id)}">
-            Eliminar
-          </button>
-        </div>
-      </article>
-    `).join("")
-    : "<p>No hay libros registrados.</p>";
-}
-
-// NUEVO LIBRO Y EDICIÓN
+/* FORMULARIO DE LIBROS */
 
 function resetBookForm() {
+
   $("bookForm").reset();
   $("bookId").value = "";
   $("formTitle").textContent = "Nuevo libro";
   $("saveBook").textContent = "Guardar libro";
-  $("cancelEdit").classList.add("hidden");
+  $("cancelEdit").style.display = "none";
+
 }
 
-$("bookForm").addEventListener("submit", async event => {
+$("cancelEdit").onclick = function() {
+  resetBookForm();
+  showSection("biblioteca");
+};
+
+/* GUARDAR LIBRO */
+
+$("bookForm").onsubmit = async function(event) {
+
   event.preventDefault();
 
-  const book = {
+  var book = {
     id: $("bookId").value || createId(),
     title: $("title").value.trim(),
     author: $("author").value.trim(),
@@ -168,33 +174,87 @@ $("bookForm").addEventListener("submit", async event => {
     note: $("note").value.trim()
   };
 
-  if (!book.title || !book.author) return;
+  if (!book.title || !book.author) return false;
 
   try {
+
     await Database.saveBook(book);
     resetBookForm();
     await refresh();
 
-    $("message").textContent = "Libro guardado correctamente.";
+    showSection("biblioteca");
+
   } catch (error) {
     alert("No se pudo guardar el libro.");
   }
-});
 
-$("cancelEdit").addEventListener("click", resetBookForm);
+  return false;
+};
 
-$("bookList").addEventListener("click", async event => {
-  const button = event.target.closest("button[data-action]");
+/* BIBLIOTECA */
 
-  if (!button) return;
+function renderBooks() {
 
-  const book = books.find(item =>
-    item.id === button.dataset.id
-  );
+  var search = $("searchBooks").value.toLowerCase().trim();
+
+  var html = "";
+  var count = 0;
+
+  for (var i = 0; i < books.length; i++) {
+
+    var book = books[i];
+
+    var text = (book.title + " " + book.author).toLowerCase();
+
+    if (text.indexOf(search) === -1) continue;
+
+    count++;
+
+    html += '<article class="book-card">';
+    html += '<h3>' + safe(book.title) + '</h3>';
+    html += '<p>' + safe(book.author) + '</p>';
+    html += '<p><strong>Estado:</strong> ' +
+      (statusNames[book.status] || "Pendiente") + '</p>';
+
+    if (book.note) {
+      html += '<p><strong>Nota:</strong> ' + safe(book.note) + '</p>';
+    }
+
+    html += '<div class="book-actions">';
+    html += '<button type="button" data-action="edit" data-id="' +
+      safe(book.id) + '">Editar</button>';
+    html += '<button type="button" data-action="delete" data-id="' +
+      safe(book.id) + '">Eliminar</button>';
+    html += '</div></article>';
+
+  }
+
+  $("bookList").innerHTML = html ||
+    "<p>No hay libros registrados.</p>";
+
+}
+
+$("searchBooks").oninput = renderBooks;
+
+$("bookList").onclick = async function(event) {
+
+  var button = event.target;
+
+  var action = button.getAttribute("data-action");
+  var id = button.getAttribute("data-id");
+
+  if (!action || !id) return;
+
+  var book = null;
+
+  for (var i = 0; i < books.length; i++) {
+    if (books[i].id === id) book = books[i];
+  }
 
   if (!book) return;
 
-  if (button.dataset.action === "edit") {
+  if (action === "edit") {
+
     $("bookId").value = book.id;
     $("title").value = book.title;
     $("author").value = book.author;
@@ -203,127 +263,134 @@ $("bookList").addEventListener("click", async event => {
 
     $("formTitle").textContent = "Editar libro";
     $("saveBook").textContent = "Guardar cambios";
-    $("cancelEdit").classList.remove("hidden");
+    $("cancelEdit").style.display = "block";
 
     showSection("nuevoLibro");
-    window.scrollTo(0, 0);
+
   }
 
-  if (button.dataset.action === "delete") {
-    if (confirm(
-      "¿Eliminar este libro y todas sus lecturas registradas?"
-    )) {
-      try {
-        await Database.deleteBook(book.id);
-        await refresh();
-      } catch (error) {
-        alert("No se pudo eliminar el libro.");
-      }
+  if (action === "delete" && confirm("¿Eliminar este libro?")) {
+
+    await Database.deleteBook(id);
+    await refresh();
+
+  }
+
+};
+
+/* AÑOS */
+
+function prepareYears() {
+
+  var selects = [
+    $("readingYear"),
+    $("newReadingYear")
+  ];
+
+  for (var s = 0; s < selects.length; s++) {
+
+    selects[s].innerHTML = "";
+
+    for (var y = new Date().getFullYear(); y >= 2000; y--) {
+
+      var option = document.createElement("option");
+
+      option.value = y;
+      option.text = y;
+
+      selects[s].appendChild(option);
+
     }
-  }
-});
 
-// BUSCADOR
-
-$("searchBooks").addEventListener("input", renderBooks);
-
-// AÑOS
-
-function populateYears(select) {
-  select.innerHTML = "";
-
-  const currentYear = new Date().getFullYear();
-
-  for (let year = currentYear; year >= 2000; year--) {
-    const option = document.createElement("option");
-    option.value = year;
-    option.textContent = year;
-    select.appendChild(option);
+    selects[s].value = selectedYear;
   }
 
-  select.value = selectedYear;
 }
 
-populateYears($("readingYear"));
-populateYears($("newReadingYear"));
+function changeYear(year) {
 
-// CAMBIO DE AÑO
+  selectedYear = Number(year);
 
-$("readingYear").addEventListener("change", () => {
-  selectedYear = Number($("readingYear").value);
-
+  $("readingYear").value = selectedYear;
   $("newReadingYear").value = selectedYear;
 
   renderReadings();
   updateCounters();
-});
 
-$("newReadingYear").addEventListener("change", () => {
-  selectedYear = Number($("newReadingYear").value);
-
-  $("readingYear").value = selectedYear;
-
-  renderReadings();
-  updateCounters();
-});
-
-// LISTA DE LIBROS PARA NUEVAS LECTURAS
-
-function renderReadingOptions() {
-  const select = $("readingBook");
-  const previous = select.value;
-
-  select.innerHTML =
-    '<option value="">Selecciona un libro</option>';
-
-  books.forEach(book => {
-    const option = document.createElement("option");
-
-    option.value = book.id;
-    option.textContent = `${book.title} — ${book.author}`;
-
-    select.appendChild(option);
-  });
-
-  if (books.some(book => book.id === previous)) {
-    select.value = previous;
-  }
 }
 
-// REGISTRAR UNA LECTURA
+$("readingYear").onchange = function() {
+  changeYear(this.value);
+};
 
-$("readingForm").addEventListener("submit", async event => {
+$("newReadingYear").onchange = function() {
+  changeYear(this.value);
+};
+
+/* LIBROS PARA REGISTRAR LECTURAS */
+
+function renderReadingOptions() {
+
+  var select = $("readingBook");
+  var previous = select.value;
+
+  select.innerHTML = '<option value="">Selecciona un libro</option>';
+
+  for (var i = 0; i < books.length; i++) {
+
+    var option = document.createElement("option");
+
+    option.value = books[i].id;
+    option.text = books[i].title + " - " + books[i].author;
+
+    select.appendChild(option);
+
+  }
+
+  select.value = previous;
+
+}
+
+/* REGISTRAR LECTURA */
+
+$("readingForm").onsubmit = async function(event) {
+
   event.preventDefault();
 
-  const bookId = $("readingBook").value;
-  const year = Number($("newReadingYear").value);
+  var bookId = $("readingBook").value;
+  var year = Number($("newReadingYear").value);
 
-  const book = books.find(item => item.id === bookId);
+  var book = null;
+
+  for (var i = 0; i < books.length; i++) {
+    if (books[i].id === bookId) book = books[i];
+  }
 
   if (!book) {
     alert("Selecciona un libro.");
-    return;
+    return false;
   }
 
-  const exists = readings.some(item =>
-    item.bookId === bookId &&
-    Number(item.year) === year
-  );
+  for (var j = 0; j < readings.length; j++) {
 
-  if (exists) {
-    alert("Este libro ya está registrado en ese año.");
-    return;
+    if (
+      readings[j].bookId === bookId &&
+      Number(readings[j].year) === year
+    ) {
+      alert("Este libro ya está registrado en ese año.");
+      return false;
+    }
+
   }
 
   try {
-    // Registrar lectura anual
+
     await Database.addReading({
       id: createId(),
-      bookId,
-      year
+      bookId: bookId,
+      year: year
     });
 
-    // Cambiar automáticamente su estado
     book.status = "leido";
 
     await Database.saveBook(book);
@@ -332,163 +399,166 @@ $("readingForm").addEventListener("submit", async event => {
 
     await refresh();
 
-    $("message").textContent =
-      "Lectura registrada. Estado actualizado a Leído.";
+    showSection("lecturas");
 
   } catch (error) {
     alert("No se pudo registrar la lectura.");
   }
-});
 
-// LECTURAS POR AÑO
+  return false;
+};
+
+/* LECTURAS POR AÑO */
 
 function renderReadings() {
-  const year = Number($("readingYear").value);
 
-  const selected = readings.filter(item =>
-    Number(item.year) === year
-  );
+  var year = Number($("readingYear").value);
+  var html = "";
+  var count = 0;
 
-  $("yearCount").textContent = selected.length;
+  for (var i = 0; i < readings.length; i++) {
 
-  $("readingList").innerHTML = selected.map(item => {
-    const book = books.find(b => b.id === item.bookId);
+    var reading = readings[i];
 
-    if (!book) return "";
+    if (Number(reading.year) !== year) continue;
 
-    return `
-      <article class="book-card">
-        <h3>${safe(book.title)}</h3>
-        <p>${safe(book.author)}</p>
+    var book = null;
 
-        <button class="secondary"
-                data-reading-delete="${safe(item.id)}">
-          Quitar de este año
-        </button>
-      </article>
-    `;
-  }).join("") || "<p>No hay lecturas registradas este año.</p>";
+    for (var j = 0; j < books.length; j++) {
+      if (books[j].id === reading.bookId) book = books[j];
+    }
+
+    if (!book) continue;
+
+    count++;
+
+    html += '<article class="book-card">';
+    html += '<h3>' + safe(book.title) + '</h3>';
+    html += '<p>' + safe(book.author) + '</p>';
+    html += '<button type="button" data-reading-delete="' +
+      safe(reading.id) + '">Quitar de este año</button>';
+    html += '</article>';
+
+  }
+
+  $("yearCount").textContent = count;
+
+  $("readingList").innerHTML = html ||
+    "<p>No hay lecturas registradas este año.</p>";
+
 }
 
-// ELIMINAR UNA LECTURA ANUAL
+$("readingList").onclick = async function(event) {
 
-$("readingList").addEventListener("click", async event => {
-  const button = event.target.closest("[data-reading-delete]");
+  var id = event.target.getAttribute("data-reading-delete");
 
-  if (!button) return;
+  if (!id) return;
 
-  if (confirm("¿Quitar este libro de las lecturas del año?")) {
-    try {
-      await Database.deleteReading(button.dataset.readingDelete);
-      await refresh();
-    } catch (error) {
-      alert("No se pudo eliminar la lectura.");
-    }
+  if (confirm("¿Quitar esta lectura del año?")) {
+
+    await Database.deleteReading(id);
+    await refresh();
+
   }
-});
 
-// EXPORTAR BASE DE DATOS
+};
 
-$("exportButton").addEventListener("click", async () => {
+/* COPIAS */
+
+$("exportButton").onclick = async function() {
+
   try {
-    const data = await Database.exportData();
 
-    const blob = new Blob(
+    var data = await Database.exportData();
+
+    var blob = new Blob(
       [JSON.stringify(data, null, 2)],
       { type: "application/json" }
     );
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    var url = URL.createObjectURL(blob);
+
+    var link = document.createElement("a");
 
     link.href = url;
     link.download = "mi-biblioteca.json";
 
     document.body.appendChild(link);
     link.click();
-    link.remove();
+    document.body.removeChild(link);
 
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-    $("message").textContent = "Copia de seguridad descargada.";
+    setTimeout(function() {
+      URL.revokeObjectURL(url);
+    }, 2000);
 
   } catch (error) {
     alert("No se pudo exportar la biblioteca.");
   }
-});
 
-// IMPORTAR BASE DE DATOS
+};
 
-$("importFile").addEventListener("change", async event => {
-  const file = event.target.files[0];
+/* IMPORTAR */
+
+$("importFile").onchange = async function(event) {
+
+  var file = event.target.files[0];
 
   if (!file) return;
 
   try {
-    const data = JSON.parse(await file.text());
 
-    if (!Array.isArray(data.books) ||
-        !Array.isArray(data.readings)) {
-      throw new Error("Archivo no válido.");
+    var data = JSON.parse(await file.text());
+
+    if (!confirm("¿Sustituir la biblioteca por esta copia?")) {
+      return;
     }
-
-    const validBooks = data.books.every(book =>
-      book &&
-      typeof book.id === "string" &&
-      typeof book.title === "string" &&
-      typeof book.author === "string" &&
-      ["pendiente", "leyendo", "leido", "abandonado"]
-        .includes(book.status)
-    );
-
-    const validReadings = data.readings.every(reading =>
-      reading &&
-      typeof reading.id === "string" &&
-      typeof reading.bookId === "string" &&
-      Number.isInteger(Number(reading.year)) &&
-      data.books.some(book => book.id === reading.bookId)
-    );
-
-    if (!validBooks || !validReadings) {
-      throw new Error("Hay registros incorrectos.");
-    }
-
-    if (!confirm(
-      "Se sustituirán todos los datos actuales. ¿Continuar?"
-    )) return;
 
     await Database.importData(data);
+
     resetBookForm();
     await refresh();
 
-    $("message").textContent = "Biblioteca restaurada correctamente.";
+    alert("Copia restaurada correctamente.");
 
   } catch (error) {
-    alert("Error al importar: " + error.message);
-  } finally {
-    event.target.value = "";
-  }
-});
 
-// INICIAR APLICACIÓN
+    alert("No se pudo importar la copia: " + error.message);
+
+  }
+
+  event.target.value = "";
+
+};
+
+/* INICIO */
 
 async function start() {
+
   try {
+
     await Database.open();
+
+    prepareYears();
+
     await refresh();
 
-    $("message").textContent = "Base de datos preparada.";
-
-    if ("serviceWorker" in navigator &&
-        location.protocol === "https:") {
-      navigator.serviceWorker.register("./sw.js")
-        .catch(() => {});
-    }
-
   } catch (error) {
+
     $("message").textContent =
-      "No se pudo abrir la base de datos.";
+      "Error al abrir la base de datos.";
+
   }
+
+  if (
+    "serviceWorker" in navigator &&
+    location.protocol === "https:"
+  ) {
+
+    navigator.serviceWorker.register("./sw.js")
+      .catch(function() {});
+
+  }
+
 }
 
 start();

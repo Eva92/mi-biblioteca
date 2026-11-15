@@ -8,6 +8,7 @@
   <title>Mi Biblioteca</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
 <header class="header">
@@ -27,28 +28,44 @@
 </header>
 
 <nav class="navigation">
-  <a href="#nuevoLibro">+ Lbro</a>
-  <a href="#biblioteca">Biblioteca</a>
-  <a href="#nuevaLectura">+ Lctra</a>
-  <a href="#lecturas">Lecturas</a>
-  <a href="#copias">Copias</a>
+  <button type="button" data-section="nuevoLibro">
+    Nuevo libro
+  </button>
+
+  <button type="button" data-section="biblioteca">
+    Biblioteca
+  </button>
+
+  <button type="button" data-section="nuevaLectura">
+    Nueva lectura
+  </button>
+
+  <button type="button" data-section="lecturas">
+    Lecturas por año
+  </button>
+
+  <button type="button" data-section="copias">
+    Copias
+  </button>
 </nav>
 
 <main>
 
   <!-- NUEVO LIBRO -->
 
-  <section id="nuevoLibro" class="section active">
+  <section id="nuevoLibro" class="section">
+
     <h2 id="formTitle">Nuevo libro</h2>
 
     <form id="bookForm">
+
       <input type="hidden" id="bookId">
 
       <label for="title">Título</label>
-      <input id="title" required maxlength="200">
+      <input id="title" type="text" maxlength="200" required>
 
       <label for="author">Autor</label>
-      <input id="author" required maxlength="150">
+      <input id="author" type="text" maxlength="150" required>
 
       <label for="status">Estado</label>
       <select id="status">
@@ -65,37 +82,43 @@
         Guardar libro
       </button>
 
-      <button type="button" id="cancelEdit"
-              class="secondary hidden">
+      <button type="button" id="cancelEdit" class="secondary hidden">
         Cancelar
       </button>
+
     </form>
+
   </section>
 
   <!-- BIBLIOTECA -->
 
   <section id="biblioteca" class="section">
+
     <h2>Mi biblioteca</h2>
 
     <input id="searchBooks" type="search"
            placeholder="Buscar título o autor">
 
     <div id="bookList"></div>
+
   </section>
 
   <!-- NUEVA LECTURA -->
 
   <section id="nuevaLectura" class="section">
+
     <h2>Registrar una lectura</h2>
 
     <form id="readingForm">
 
       <label for="readingBook">Seleccionar libro</label>
+
       <select id="readingBook" required>
         <option value="">Selecciona un libro</option>
       </select>
 
       <label for="newReadingYear">Año de lectura</label>
+
       <select id="newReadingYear"></select>
 
       <button type="submit">
@@ -103,14 +126,17 @@
       </button>
 
     </form>
+
   </section>
 
   <!-- LECTURAS POR AÑO -->
 
   <section id="lecturas" class="section">
+
     <h2>Lecturas por año</h2>
 
     <label for="readingYear">Seleccionar año</label>
+
     <select id="readingYear"></select>
 
     <div class="year-summary">
@@ -119,16 +145,18 @@
     </div>
 
     <div id="readingList"></div>
+
   </section>
 
   <!-- COPIAS -->
 
   <section id="copias" class="section">
+
     <h2>Copias de seguridad</h2>
 
     <p>Guarda todos tus libros y lecturas en un archivo.</p>
 
-    <button id="exportButton">
+    <button type="button" id="exportButton">
       Exportar base de datos
     </button>
 
@@ -140,6 +168,7 @@
            accept=".json,application/json">
 
     <p id="message"></p>
+
   </section>
 
 </main>

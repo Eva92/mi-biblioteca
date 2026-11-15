@@ -1,7 +1,7 @@
 
-const CACHE = "mi-biblioteca-v5";
+var CACHE_NAME = "mi-biblioteca-v6";
 
-const FILES = [
+var FILES = [
   "./",
   "./index.html",
   "./style.css",
@@ -9,46 +9,88 @@ const FILES = [
   "./app.js"
 ];
 
-self.addEventListener("install", event => {
+self.addEventListener("install", function(event) {
+
   event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(FILES))
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(FILES);
+    })
   );
+
   self.skipWaiting();
+
 });
 
-self.addEventListener("activate", event => {
+self.addEventListener("activate", function(event) {
+
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE)
-          .map(key => caches.delete(key))
-      )
-    )
+    caches.keys().then(function(keys) {
+
+      return Promise.all(
+        keys.map(function(key) {
+
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+
+        })
+      );
+
+    })
   );
+
   self.clients.claim();
+
 });
 
-self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+self.addEventListener("fetch", function(event) {
+
+  if (event.request.method !== "GET") {
+    return;
+  }
+
+  var url = new URL(event.request.url);
+
+  if (url.origin !== self.location.origin) {
+    return;
+  }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
 
-      return fetch(event.request).then(response => {
+    caches.match(event.request).then(function(cached) {
+
+      if (cached) {
+        return cached;
+      }
+
+      return fetch(event.request).then(function(response) {
+
         if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache =>
-            cache.put(event.request, copy)
-          );
+
+          var copy = response.clone();
+
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, copy);
+          });
+
         }
+
         return response;
-      }).catch(() => {
+
+      }).catch(function() {
+
         if (event.request.mode === "navigate") {
           return caches.match("./index.html");
         }
-        return new Response("", { status: 503 });
+
+        return new Response("", {
+          status: 503
+        });
+
       });
+
     })
+
   );
+
 });
