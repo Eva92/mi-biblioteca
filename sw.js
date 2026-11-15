@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "mi-biblioteca-v1";
+const CACHE_NAME = "mi-biblioteca-v2";
 
 const FILES_TO_CACHE = [
   "./",
