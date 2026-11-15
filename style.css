@@ -86,12 +86,7 @@ main {
   padding: 10px 0;
 }
 
-.section:target {
-  display: block;
-}
-
-body:not(:has(.section:target))
-#nuevoLibro {
+.section.visible {
   display: block;
 }
 

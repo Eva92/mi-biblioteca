@@ -29,40 +29,56 @@ function safe(value) {
 
 // NAVEGACIÓN
 
+const sectionNames = [
+  "nuevoLibro",
+  "biblioteca",
+  "nuevaLectura",
+  "lecturas",
+  "copias"
+];
 
 function showSection(sectionId) {
-  const sections = [
-    "nuevoLibro",
-    "biblioteca",
-    "nuevaLectura",
-    "lecturas",
-    "copias"
-  ];
 
-  if (!sections.includes(sectionId)) {
+  if (sectionNames.indexOf(sectionId) === -1) {
     sectionId = "nuevoLibro";
   }
 
-  window.location.hash = sectionId;
+  sectionNames.forEach(id => {
+    const section = document.getElementById(id);
+
+    if (section) {
+      section.className = "section";
+      section.style.display = "none";
+    }
+  });
+
+  const selected = document.getElementById(sectionId);
+
+  if (selected) {
+    selected.className = "section visible";
+    selected.style.display = "block";
+  }
 }
 
-window.addEventListener("hashchange", () => {
-  const sectionId = location.hash.substring(1) || "nuevoLibro";
+// Navegación mediante enlaces
 
-  document.querySelectorAll(".section").forEach(section => {
-    section.style.display =
-      section.id === sectionId ? "block" : "none";
+document.querySelectorAll(".navigation a").forEach(link => {
+
+  link.addEventListener("click", function(event) {
+    event.preventDefault();
+
+    const sectionId = this.getAttribute("href").substring(1);
+
+    showSection(sectionId);
+
+    history.replaceState(null, "", "#" + sectionId);
   });
+
 });
 
-window.addEventListener("DOMContentLoaded", () => {
-  const sectionId = location.hash.substring(1) || "nuevoLibro";
+// Mostrar sección inicial
 
-  document.querySelectorAll(".section").forEach(section => {
-    section.style.display =
-      section.id === sectionId ? "block" : "none";
-  });
-});
+showSection("nuevoLibro");
 
 // CARGAR DATOS
 
