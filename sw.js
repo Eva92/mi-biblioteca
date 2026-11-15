@@ -1,5 +1,5 @@
 
-const CACHE = "mi-biblioteca-v2";
+const CACHE = "mi-biblioteca-v3";
 
 const FILES = [
   "./",
