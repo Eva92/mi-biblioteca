@@ -18,9 +18,11 @@
 </header>
 
 <nav>
-  <button id="showBooks" class="active">MI BIBLIOTECA</button>
-  <button id="showYear">LECTURAS DEL AÑO</button>
+  <button id="showBooks" class="active">BIBLIOTECA</button>
+  <button id="showYear">LECTURAS</button>
+  <button id="showBackup">COPIAS</button>
 </nav>
+
 
 <!-- BIBLIOTECA -->
 
@@ -85,6 +87,48 @@
   <p id="yearTotal">0 libros leídos</p>
 
   <div id="yearList"></div>
+
+</section>
+
+
+<!-- COPIAS DE SEGURIDAD -->
+
+<section id="backupSection" hidden>
+
+  <h2>HISTORIAL DE LECTURAS</h2>
+
+  <p>
+    Guarda todos tus libros y las lecturas
+    registradas por año.
+  </p>
+
+  <button id="exportBackup" class="primary">
+    GUARDAR HISTORIAL TXT
+  </button>
+
+  <h2>RECUPERAR HISTORIAL</h2>
+
+  <p>
+    Selecciona un archivo TXT creado por
+    Mi Biblioteca.
+  </p>
+
+  <input
+    type="file"
+    id="importBackupFile"
+    accept=".txt,text/plain"
+  >
+
+  <button id="importBackup" class="primary">
+    RESTAURAR HISTORIAL
+  </button>
+
+  <p id="backupMessage"></p>
+
+  <p>
+    Importante: restaurar una copia sustituye
+    los registros actuales.
+  </p>
 
 </section>
 

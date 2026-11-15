@@ -154,3 +154,38 @@ function deleteYearlyRead(id) {
   });
 
 }
+
+function restoreBackup(backup) {
+
+  return new Promise((resolve, reject) => {
+
+    const transaction = db.transaction(
+      ["books", "yearlyReads"],
+      "readwrite"
+    );
+
+    const booksStore = transaction.objectStore("books");
+    const readsStore = transaction.objectStore("yearlyReads");
+
+    booksStore.clear();
+    readsStore.clear();
+
+    backup.books.forEach(book => {
+      booksStore.put(book);
+    });
+
+    backup.yearlyReads.forEach(read => {
+      readsStore.put(read);
+    });
+
+    transaction.oncomplete = () => resolve(true);
+
+    transaction.onerror = () => reject(transaction.error);
+
+    transaction.onabort = () => reject(
+      transaction.error || new Error("Restauración cancelada")
+    );
+
+  });
+
+}

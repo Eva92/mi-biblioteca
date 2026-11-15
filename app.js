@@ -367,3 +367,180 @@ $("year").onchange = renderYear;
 // ARRANCAR
 
 init();
+
+// ======================================
+// NAVEGACIÓN DE COPIAS DE SEGURIDAD
+// ======================================
+
+$("showBackup").onclick = () => {
+
+  $("booksSection").hidden = true;
+  $("yearSection").hidden = true;
+  $("backupSection").hidden = false;
+
+  $("showBooks").classList.remove("active");
+  $("showYear").classList.remove("active");
+  $("showBackup").classList.add("active");
+
+};
+
+
+// ======================================
+// EXPORTAR HISTORIAL TXT
+// ======================================
+
+$("exportBackup").onclick = async () => {
+
+  try {
+
+    const allBooks = await getBooks();
+
+    // Obtener todas las lecturas de los años disponibles
+    const transaction = db.transaction(
+      "yearlyReads",
+      "readonly"
+    );
+
+    const request = transaction
+      .objectStore("yearlyReads")
+      .getAll();
+
+    const allReads = await new Promise((resolve, reject) => {
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+
+    });
+
+    const backup = {
+      application: "Mi Biblioteca Kindle",
+      format: "MiBibliotecaBackup",
+      version: 1,
+      exportDate: new Date().toISOString(),
+      books: allBooks,
+      yearlyReads: allReads
+    };
+
+    const content =
+      "COPIA DE SEGURIDAD - MI BIBLIOTECA\n" +
+      "No modificar el contenido de este archivo.\n\n" +
+      JSON.stringify(backup, null, 2);
+
+    const blob = new Blob(
+      ["\uFEFF", content],
+      { type: "text/plain;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "MiBiblioteca-Historial.txt";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    $("backupMessage").textContent =
+      "Copia de seguridad preparada.";
+
+  } catch (error) {
+
+    console.error(error);
+
+    $("backupMessage").textContent =
+      "No se pudo guardar el historial.";
+
+  }
+
+};
+
+
+// ======================================
+// RESTAURAR HISTORIAL TXT
+// ======================================
+
+$("importBackup").onclick = async () => {
+
+  const file = $("importBackupFile").files[0];
+
+  if (!file) {
+
+    alert("Selecciona primero un archivo TXT.");
+    return;
+
+  }
+
+  if (!confirm(
+    "ATENCIÓN: la restauración sustituirá todos los libros y lecturas actuales. ¿Deseas continuar?"
+  )) return;
+
+  try {
+
+    const text = await file.text();
+
+    const start = text.indexOf("{");
+
+    if (start === -1) {
+      throw new Error("Archivo no válido");
+    }
+
+    const backup = JSON.parse(text.slice(start));
+
+    if (
+      backup.format !== "MiBibliotecaBackup" ||
+      backup.version !== 1 ||
+      !Array.isArray(backup.books) ||
+      !Array.isArray(backup.yearlyReads)
+    ) {
+      throw new Error("Formato de copia no compatible");
+    }
+
+    const validIds = new Set(
+      backup.books.map(book => book.id)
+    );
+
+    const validBooks = backup.books.every(book =>
+      Number.isInteger(book.id) &&
+      typeof book.title === "string" &&
+      typeof book.author === "string" &&
+      typeof book.status === "string" &&
+      typeof book.notes === "string"
+    );
+
+    const validReads = backup.yearlyReads.every(read =>
+      Number.isInteger(read.id) &&
+      Number.isInteger(read.year) &&
+      validIds.has(read.bookId)
+    );
+
+    if (!validBooks || !validReads) {
+      throw new Error("Los registros no son válidos");
+    }
+
+    await restoreBackup(backup);
+
+    await renderBooks();
+    await renderSelector();
+    await renderYear();
+
+    $("backupMessage").textContent =
+      "Historial restaurado correctamente.";
+
+    $("importBackupFile").value = "";
+
+    alert("Tu biblioteca ha sido restaurada.");
+
+  } catch (error) {
+
+    console.error(error);
+
+    $("backupMessage").textContent =
+      "No se pudo restaurar. Comprueba que el TXT sea una copia válida.";
+
+  }
+
+};
