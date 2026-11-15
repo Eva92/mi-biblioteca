@@ -1,546 +1,459 @@
 
-let books = [];
-let editingId = null;
-
 const $ = id => document.getElementById(id);
 
-function makeElement(tag, text, className) {
+let books = [];
+let readings = [];
+let selectedYear = new Date().getFullYear();
 
-  const element = document.createElement(tag);
+const labels = {
+  pendiente: "Pendiente",
+  leyendo: "Leyendo",
+  leido: "Leído",
+  abandonado: "Abandonado"
+};
 
-  element.textContent = text;
+function createId() {
+  return Date.now().toString(36) +
+    Math.random().toString(36).slice(2);
+}
 
-  if (className) element.className = className;
-
-  return element;
-
+function safe(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[c]);
 }
 
 // NAVEGACIÓN
 
-$("showBooks").onclick = () => {
+function showSection(sectionId) {
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.toggle("active", section.id === sectionId);
+  });
 
-  $("booksSection").hidden = false;
-  $("yearSection").hidden = true;
-
-  $("showBooks").classList.add("active");
-  $("showYear").classList.remove("active");
-
-};
-
-$("showYear").onclick = async () => {
-
-  $("booksSection").hidden = true;
-  $("yearSection").hidden = false;
-
-  $("showYear").classList.add("active");
-  $("showBooks").classList.remove("active");
-
-  await renderYear();
-
-};
-
-// INICIO
-
-async function init() {
-
-  try {
-
-    await openDatabase();
-
-    $("dbStatus").textContent = "BASE DE DATOS CONECTADA";
-
-    const yearSelect = $("year");
-    const currentYear = new Date().getFullYear();
-
-    for (let year = currentYear - 10; year <= currentYear + 1; year++) {
-
-      const option = makeElement("option", String(year));
-      option.value = year;
-
-      if (year === currentYear) option.selected = true;
-
-      yearSelect.appendChild(option);
-
-    }
-
-    await renderBooks();
-    await renderSelector();
-
-  } catch (error) {
-
-    console.error(error);
-
-    $("dbStatus").textContent = "ERROR DE BASE DE DATOS";
-
-    alert("No se pudo abrir la base de datos.");
-
-  }
-
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.tab === sectionId);
+  });
 }
 
-// GUARDAR LIBRO
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => {
+    showSection(button.dataset.tab);
+  });
+});
 
-$("bookForm").onsubmit = async event => {
+// CARGAR DATOS
 
+async function refresh() {
+  books = await Database.getBooks();
+  readings = await Database.getReadings();
+
+  renderBooks();
+  renderReadingOptions();
+  renderReadings();
+  updateCounters();
+}
+
+// ENCABEZADO
+
+function updateCounters() {
+  $("totalBooks").textContent = books.length;
+
+  const count = readings.filter(item =>
+    Number(item.year) === selectedYear
+  ).length;
+
+  $("totalReadings").textContent = count;
+}
+
+// BIBLIOTECA
+
+function renderBooks() {
+  const search = $("searchBooks").value.toLowerCase().trim();
+
+  const filtered = books.filter(book =>
+    `${book.title} ${book.author}`.toLowerCase().includes(search)
+  );
+
+  $("bookList").innerHTML = filtered.length
+    ? filtered.map(book => `
+      <article class="book-card">
+        <h3>${safe(book.title)}</h3>
+
+        <p>${safe(book.author)}</p>
+
+        <p><strong>Estado:</strong>
+          ${labels[book.status] || "Pendiente"}
+        </p>
+
+        ${book.note ? `
+          <p><strong>Nota:</strong>
+            ${safe(book.note)}
+          </p>
+        ` : ""}
+
+        <div class="book-actions">
+          <button data-action="edit"
+                  data-id="${safe(book.id)}">
+            Editar
+          </button>
+
+          <button class="secondary"
+                  data-action="delete"
+                  data-id="${safe(book.id)}">
+            Eliminar
+          </button>
+        </div>
+      </article>
+    `).join("")
+    : "<p>No hay libros registrados.</p>";
+}
+
+// NUEVO LIBRO Y EDICIÓN
+
+function resetBookForm() {
+  $("bookForm").reset();
+  $("bookId").value = "";
+  $("formTitle").textContent = "Nuevo libro";
+  $("saveBook").textContent = "Guardar libro";
+  $("cancelEdit").classList.add("hidden");
+}
+
+$("bookForm").addEventListener("submit", async event => {
   event.preventDefault();
 
   const book = {
-
+    id: $("bookId").value || createId(),
     title: $("title").value.trim(),
     author: $("author").value.trim(),
     status: $("status").value,
-    notes: $("notes").value.trim()
-
+    note: $("note").value.trim()
   };
 
   if (!book.title || !book.author) return;
 
   try {
+    await Database.saveBook(book);
+    resetBookForm();
+    await refresh();
 
-    if (editingId !== null) {
-
-      const existing = books.find(b => b.id === editingId);
-
-      await updateBook({
-        ...existing,
-        ...book
-      });
-
-    } else {
-
-      await addBook(book);
-
-    }
-
-    resetForm();
-
-    await renderBooks();
-    await renderSelector();
-
-    alert("Libro guardado.");
-
+    $("message").textContent = "Libro guardado correctamente.";
   } catch (error) {
-
-    alert("Error al guardar el libro.");
-
+    alert("No se pudo guardar el libro.");
   }
+});
 
-};
+$("cancelEdit").addEventListener("click", resetBookForm);
 
-// LIMPIAR FORMULARIO
+$("bookList").addEventListener("click", async event => {
+  const button = event.target.closest("button[data-action]");
 
-function resetForm() {
+  if (!button) return;
 
-  $("bookForm").reset();
-
-  editingId = null;
-
-  $("cancelEdit").hidden = true;
-
-}
-
-$("cancelEdit").onclick = resetForm;
-
-// MOSTRAR LIBROS
-
-async function renderBooks() {
-
-  books = await getBooks();
-
-  const list = $("bookList");
-  const query = $("search").value.toLowerCase().trim();
-
-  list.innerHTML = "";
-
-  const filtered = books.filter(book =>
-    (book.title + " " + book.author)
-      .toLowerCase()
-      .includes(query)
+  const book = books.find(item =>
+    item.id === button.dataset.id
   );
 
-  if (!filtered.length) {
+  if (!book) return;
 
-    list.appendChild(
-      makeElement("p", "No hay libros registrados.", "empty")
-    );
+  if (button.dataset.action === "edit") {
+    $("bookId").value = book.id;
+    $("title").value = book.title;
+    $("author").value = book.author;
+    $("status").value = book.status;
+    $("note").value = book.note || "";
 
+    $("formTitle").textContent = "Editar libro";
+    $("saveBook").textContent = "Guardar cambios";
+    $("cancelEdit").classList.remove("hidden");
+
+    showSection("nuevoLibro");
+    window.scrollTo(0, 0);
   }
 
-  filtered.forEach(book => {
-
-    const card = makeElement("article", "", "book");
-
-    card.appendChild(
-      makeElement("h3", book.title)
-    );
-
-    card.appendChild(
-      makeElement("p", "Autor: " + book.author)
-    );
-
-    card.appendChild(
-      makeElement("p", "Estado: " + book.status)
-    );
-
-    if (book.notes) {
-      card.appendChild(
-        makeElement("p", "Notas: " + book.notes)
-      );
+  if (button.dataset.action === "delete") {
+    if (confirm(
+      "¿Eliminar este libro y todas sus lecturas registradas?"
+    )) {
+      try {
+        await Database.deleteBook(book.id);
+        await refresh();
+      } catch (error) {
+        alert("No se pudo eliminar el libro.");
+      }
     }
+  }
+});
 
-    const actions = makeElement("div", "", "book-actions");
+// BUSCADOR
 
-    const edit = makeElement("button", "EDITAR");
+$("searchBooks").addEventListener("input", renderBooks);
 
-    edit.onclick = () => {
+// AÑOS
 
-      editingId = book.id;
+function populateYears(select) {
+  select.innerHTML = "";
 
-      $("title").value = book.title;
-      $("author").value = book.author;
-      $("status").value = book.status;
-      $("notes").value = book.notes;
+  const currentYear = new Date().getFullYear();
 
-      $("cancelEdit").hidden = false;
+  for (let year = currentYear; year >= 2000; year--) {
+    const option = document.createElement("option");
+    option.value = year;
+    option.textContent = year;
+    select.appendChild(option);
+  }
 
-      $("booksSection").scrollIntoView();
-
-    };
-
-    const remove = makeElement("button", "ELIMINAR");
-
-    remove.onclick = async () => {
-
-      if (!confirm("¿Eliminar este libro?")) return;
-
-      await deleteBook(book.id);
-
-      await renderBooks();
-      await renderSelector();
-      await renderYear();
-
-    };
-
-    actions.append(edit, remove);
-    card.appendChild(actions);
-
-    list.appendChild(card);
-
-  });
-
+  select.value = selectedYear;
 }
 
-$("search").oninput = renderBooks;
+populateYears($("readingYear"));
+populateYears($("newReadingYear"));
 
-// SELECTOR DE LIBROS
+// CAMBIO DE AÑO
 
-async function renderSelector() {
+$("readingYear").addEventListener("change", () => {
+  selectedYear = Number($("readingYear").value);
 
-  books = await getBooks();
+  $("newReadingYear").value = selectedYear;
 
-  const selector = $("bookSelector");
+  renderReadings();
+  updateCounters();
+});
 
-  selector.innerHTML = "";
+$("newReadingYear").addEventListener("change", () => {
+  selectedYear = Number($("newReadingYear").value);
+
+  $("readingYear").value = selectedYear;
+
+  renderReadings();
+  updateCounters();
+});
+
+// LISTA DE LIBROS PARA NUEVAS LECTURAS
+
+function renderReadingOptions() {
+  const select = $("readingBook");
+  const previous = select.value;
+
+  select.innerHTML =
+    '<option value="">Selecciona un libro</option>';
 
   books.forEach(book => {
-
-    const option = makeElement(
-      "option",
-      book.title + " — " + book.author
-    );
+    const option = document.createElement("option");
 
     option.value = book.id;
+    option.textContent = `${book.title} — ${book.author}`;
 
-    selector.appendChild(option);
-
+    select.appendChild(option);
   });
 
-  $("addYearBook").disabled = books.length === 0;
-
+  if (books.some(book => book.id === previous)) {
+    select.value = previous;
+  }
 }
 
-// AÑADIR LIBRO AL AÑO
+// REGISTRAR UNA LECTURA
 
-$("addYearBook").onclick = async () => {
+$("readingForm").addEventListener("submit", async event => {
+  event.preventDefault();
 
-  const bookId = Number($("bookSelector").value);
-  const year = Number($("year").value);
+  const bookId = $("readingBook").value;
+  const year = Number($("newReadingYear").value);
 
-  if (!bookId) {
+  const book = books.find(item => item.id === bookId);
+
+  if (!book) {
     alert("Selecciona un libro.");
     return;
   }
 
-  try {
+  const exists = readings.some(item =>
+    item.bookId === bookId &&
+    Number(item.year) === year
+  );
 
-    const currentReads = await getYearlyReads(year);
-
-    if (currentReads.some(read => read.bookId === bookId)) {
-      alert("Este libro ya está en las lecturas del año.");
-      return;
-    }
-
-    await addYearlyRead(bookId, year);
-
-    await renderYear();
-
-    alert("Libro añadido al historial anual.");
-
-  } catch (error) {
-
-    alert("No se pudo añadir el libro.");
-
+  if (exists) {
+    alert("Este libro ya está registrado en ese año.");
+    return;
   }
-
-};
-
-// MOSTRAR HISTORIAL ANUAL
-
-async function renderYear() {
-
-  const year = Number($("year").value);
-
-  const reads = await getYearlyReads(year);
-  books = await getBooks();
-
-  const list = $("yearList");
-
-  list.innerHTML = "";
-
-  let count = 0;
-
-  for (const read of reads) {
-
-    const book = books.find(b => b.id === read.bookId);
-
-    if (!book) continue;
-
-    count++;
-
-    const card = makeElement("article", "", "year-book");
-
-    card.appendChild(
-      makeElement("strong", book.title)
-    );
-
-    card.appendChild(
-      makeElement("p", book.author)
-    );
-
-    const remove = makeElement(
-      "button",
-      "QUITAR DEL AÑO"
-    );
-
-    remove.onclick = async () => {
-
-      if (!confirm("¿Quitar este libro de las lecturas del año?")) return;
-
-      await deleteYearlyRead(read.id);
-
-      await renderYear();
-
-    };
-
-    card.appendChild(remove);
-
-    list.appendChild(card);
-
-  }
-
-  $("yearTotal").textContent =
-    count + (count === 1 ? " libro registrado" : " libros registrados");
-
-  if (!count) {
-
-    list.appendChild(
-      makeElement("p", "Todavía no has añadido lecturas a este año.", "empty")
-    );
-
-  }
-
-}
-
-$("year").onchange = renderYear;
-
-// ARRANCAR
-
-init();
-
-// ======================================
-// NAVEGACIÓN DE COPIAS DE SEGURIDAD
-// ======================================
-
-$("showBackup").onclick = () => {
-
-  $("booksSection").hidden = true;
-  $("yearSection").hidden = true;
-  $("backupSection").hidden = false;
-
-  $("showBooks").classList.remove("active");
-  $("showYear").classList.remove("active");
-  $("showBackup").classList.add("active");
-
-};
-
-
-// ======================================
-// EXPORTAR HISTORIAL TXT
-// ======================================
-
-$("exportBackup").onclick = async () => {
 
   try {
-
-    const allBooks = await getBooks();
-
-    // Obtener todas las lecturas de los años disponibles
-    const transaction = db.transaction(
-      "yearlyReads",
-      "readonly"
-    );
-
-    const request = transaction
-      .objectStore("yearlyReads")
-      .getAll();
-
-    const allReads = await new Promise((resolve, reject) => {
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-
+    // Registrar lectura anual
+    await Database.addReading({
+      id: createId(),
+      bookId,
+      year
     });
 
-    const backup = {
-      application: "Mi Biblioteca Kindle",
-      format: "MiBibliotecaBackup",
-      version: 1,
-      exportDate: new Date().toISOString(),
-      books: allBooks,
-      yearlyReads: allReads
-    };
+    // Cambiar automáticamente su estado
+    book.status = "leido";
 
-    const content =
-      "COPIA DE SEGURIDAD - MI BIBLIOTECA\n" +
-      "No modificar el contenido de este archivo.\n\n" +
-      JSON.stringify(backup, null, 2);
+    await Database.saveBook(book);
+
+    $("readingForm").reset();
+
+    await refresh();
+
+    $("message").textContent =
+      "Lectura registrada. Estado actualizado a Leído.";
+
+  } catch (error) {
+    alert("No se pudo registrar la lectura.");
+  }
+});
+
+// LECTURAS POR AÑO
+
+function renderReadings() {
+  const year = Number($("readingYear").value);
+
+  const selected = readings.filter(item =>
+    Number(item.year) === year
+  );
+
+  $("yearCount").textContent = selected.length;
+
+  $("readingList").innerHTML = selected.map(item => {
+    const book = books.find(b => b.id === item.bookId);
+
+    if (!book) return "";
+
+    return `
+      <article class="book-card">
+        <h3>${safe(book.title)}</h3>
+        <p>${safe(book.author)}</p>
+
+        <button class="secondary"
+                data-reading-delete="${safe(item.id)}">
+          Quitar de este año
+        </button>
+      </article>
+    `;
+  }).join("") || "<p>No hay lecturas registradas este año.</p>";
+}
+
+// ELIMINAR UNA LECTURA ANUAL
+
+$("readingList").addEventListener("click", async event => {
+  const button = event.target.closest("[data-reading-delete]");
+
+  if (!button) return;
+
+  if (confirm("¿Quitar este libro de las lecturas del año?")) {
+    try {
+      await Database.deleteReading(button.dataset.readingDelete);
+      await refresh();
+    } catch (error) {
+      alert("No se pudo eliminar la lectura.");
+    }
+  }
+});
+
+// EXPORTAR BASE DE DATOS
+
+$("exportButton").addEventListener("click", async () => {
+  try {
+    const data = await Database.exportData();
 
     const blob = new Blob(
-      ["\uFEFF", content],
-      { type: "text/plain;charset=utf-8" }
+      [JSON.stringify(data, null, 2)],
+      { type: "application/json" }
     );
 
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "MiBiblioteca-Historial.txt";
+    link.download = "mi-biblioteca.json";
 
     document.body.appendChild(link);
     link.click();
     link.remove();
 
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-    $("backupMessage").textContent =
-      "Copia de seguridad preparada.";
+    $("message").textContent = "Copia de seguridad descargada.";
 
   } catch (error) {
-
-    console.error(error);
-
-    $("backupMessage").textContent =
-      "No se pudo guardar el historial.";
-
+    alert("No se pudo exportar la biblioteca.");
   }
+});
 
-};
+// IMPORTAR BASE DE DATOS
 
+$("importFile").addEventListener("change", async event => {
+  const file = event.target.files[0];
 
-// ======================================
-// RESTAURAR HISTORIAL TXT
-// ======================================
-
-$("importBackup").onclick = async () => {
-
-  const file = $("importBackupFile").files[0];
-
-  if (!file) {
-
-    alert("Selecciona primero un archivo TXT.");
-    return;
-
-  }
-
-  if (!confirm(
-    "ATENCIÓN: la restauración sustituirá todos los libros y lecturas actuales. ¿Deseas continuar?"
-  )) return;
+  if (!file) return;
 
   try {
+    const data = JSON.parse(await file.text());
 
-    const text = await file.text();
-
-    const start = text.indexOf("{");
-
-    if (start === -1) {
-      throw new Error("Archivo no válido");
+    if (!Array.isArray(data.books) ||
+        !Array.isArray(data.readings)) {
+      throw new Error("Archivo no válido.");
     }
 
-    const backup = JSON.parse(text.slice(start));
-
-    if (
-      backup.format !== "MiBibliotecaBackup" ||
-      backup.version !== 1 ||
-      !Array.isArray(backup.books) ||
-      !Array.isArray(backup.yearlyReads)
-    ) {
-      throw new Error("Formato de copia no compatible");
-    }
-
-    const validIds = new Set(
-      backup.books.map(book => book.id)
-    );
-
-    const validBooks = backup.books.every(book =>
-      Number.isInteger(book.id) &&
+    const validBooks = data.books.every(book =>
+      book &&
+      typeof book.id === "string" &&
       typeof book.title === "string" &&
       typeof book.author === "string" &&
-      typeof book.status === "string" &&
-      typeof book.notes === "string"
+      ["pendiente", "leyendo", "leido", "abandonado"]
+        .includes(book.status)
     );
 
-    const validReads = backup.yearlyReads.every(read =>
-      Number.isInteger(read.id) &&
-      Number.isInteger(read.year) &&
-      validIds.has(read.bookId)
+    const validReadings = data.readings.every(reading =>
+      reading &&
+      typeof reading.id === "string" &&
+      typeof reading.bookId === "string" &&
+      Number.isInteger(Number(reading.year)) &&
+      data.books.some(book => book.id === reading.bookId)
     );
 
-    if (!validBooks || !validReads) {
-      throw new Error("Los registros no son válidos");
+    if (!validBooks || !validReadings) {
+      throw new Error("Hay registros incorrectos.");
     }
 
-    await restoreBackup(backup);
+    if (!confirm(
+      "Se sustituirán todos los datos actuales. ¿Continuar?"
+    )) return;
 
-    await renderBooks();
-    await renderSelector();
-    await renderYear();
+    await Database.importData(data);
+    resetBookForm();
+    await refresh();
 
-    $("backupMessage").textContent =
-      "Historial restaurado correctamente.";
-
-    $("importBackupFile").value = "";
-
-    alert("Tu biblioteca ha sido restaurada.");
+    $("message").textContent = "Biblioteca restaurada correctamente.";
 
   } catch (error) {
-
-    console.error(error);
-
-    $("backupMessage").textContent =
-      "No se pudo restaurar. Comprueba que el TXT sea una copia válida.";
-
+    alert("Error al importar: " + error.message);
+  } finally {
+    event.target.value = "";
   }
+});
 
-};
+// INICIAR APLICACIÓN
+
+async function start() {
+  try {
+    await Database.open();
+    await refresh();
+
+    $("message").textContent = "Base de datos preparada.";
+
+    if ("serviceWorker" in navigator &&
+        location.protocol === "https:") {
+      navigator.serviceWorker.register("./sw.js")
+        .catch(() => {});
+    }
+
+  } catch (error) {
+    $("message").textContent =
+      "No se pudo abrir la base de datos.";
+  }
+}
+
+start();

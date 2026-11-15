@@ -1,191 +1,147 @@
 
-const DB_NAME = "MiBibliotecaSimple";
-const DB_VERSION = 1;
+const Database = (() => {
+  const DB_NAME = "MiBibliotecaDB";
+  const VERSION = 1;
+  let db;
 
-let db;
-
-function openDatabase() {
-
-  return new Promise((resolve, reject) => {
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = event => {
-
-      const database = event.target.result;
-
-      if (!database.objectStoreNames.contains("books")) {
-        database.createObjectStore("books", {
-          keyPath: "id",
-          autoIncrement: true
-        });
+  function open() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        reject(new Error("IndexedDB no disponible"));
+        return;
       }
 
-      if (!database.objectStoreNames.contains("yearlyReads")) {
+      const request = indexedDB.open(DB_NAME, VERSION);
 
-        const store = database.createObjectStore("yearlyReads", {
-          keyPath: "id",
-          autoIncrement: true
-        });
+      request.onupgradeneeded = event => {
+        const database = event.target.result;
 
-        store.createIndex("year", "year", {
-          unique: false
-        });
+        if (!database.objectStoreNames.contains("books")) {
+          database.createObjectStore("books", {
+            keyPath: "id"
+          });
+        }
 
-      }
+        if (!database.objectStoreNames.contains("readings")) {
+          const store = database.createObjectStore("readings", {
+            keyPath: "id"
+          });
 
-    };
+          store.createIndex("year", "year", { unique: false });
+          store.createIndex("bookId", "bookId", { unique: false });
+        }
+      };
 
-    request.onsuccess = event => {
-      db = event.target.result;
-      resolve(db);
-    };
+      request.onsuccess = () => {
+        db = request.result;
+        resolve();
+      };
 
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function addBook(book) {
-
-  return new Promise((resolve, reject) => {
-
-    const request = db.transaction("books", "readwrite")
-      .objectStore("books")
-      .add(book);
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function getBooks() {
-
-  return new Promise((resolve, reject) => {
-
-    const request = db.transaction("books", "readonly")
-      .objectStore("books")
-      .getAll();
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function updateBook(book) {
-
-  return new Promise((resolve, reject) => {
-
-    const request = db.transaction("books", "readwrite")
-      .objectStore("books")
-      .put(book);
-
-    request.onsuccess = () => resolve(true);
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function deleteBook(id) {
-
-  return new Promise((resolve, reject) => {
-
-    const request = db.transaction("books", "readwrite")
-      .objectStore("books")
-      .delete(Number(id));
-
-    request.onsuccess = () => resolve(true);
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function addYearlyRead(bookId, year) {
-
-  return new Promise((resolve, reject) => {
-
-    const request = db.transaction("yearlyReads", "readwrite")
-      .objectStore("yearlyReads")
-      .add({
-        bookId: Number(bookId),
-        year: Number(year)
-      });
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function getYearlyReads(year) {
-
-  return new Promise((resolve, reject) => {
-
-    const transaction = db.transaction("yearlyReads", "readonly");
-    const index = transaction.objectStore("yearlyReads").index("year");
-    const request = index.getAll(Number(year));
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function deleteYearlyRead(id) {
-
-  return new Promise((resolve, reject) => {
-
-    const request = db.transaction("yearlyReads", "readwrite")
-      .objectStore("yearlyReads")
-      .delete(Number(id));
-
-    request.onsuccess = () => resolve(true);
-    request.onerror = () => reject(request.error);
-
-  });
-
-}
-
-function restoreBackup(backup) {
-
-  return new Promise((resolve, reject) => {
-
-    const transaction = db.transaction(
-      ["books", "yearlyReads"],
-      "readwrite"
-    );
-
-    const booksStore = transaction.objectStore("books");
-    const readsStore = transaction.objectStore("yearlyReads");
-
-    booksStore.clear();
-    readsStore.clear();
-
-    backup.books.forEach(book => {
-      booksStore.put(book);
+      request.onerror = () => reject(request.error);
     });
+  }
 
-    backup.yearlyReads.forEach(read => {
-      readsStore.put(read);
+  function request(storeName, mode, action) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, mode);
+      const operation = action(transaction.objectStore(storeName));
+
+      operation.onsuccess = () => resolve(operation.result);
+      operation.onerror = () => reject(operation.error);
     });
+  }
 
-    transaction.oncomplete = () => resolve(true);
+  function all(store) {
+    return request(store, "readonly", s => s.getAll());
+  }
 
-    transaction.onerror = () => reject(transaction.error);
+  function getBooks() {
+    return all("books");
+  }
 
-    transaction.onabort = () => reject(
-      transaction.error || new Error("Restauración cancelada")
-    );
+  function getReadings() {
+    return all("readings");
+  }
 
-  });
+  function saveBook(book) {
+    return request("books", "readwrite", s => s.put(book));
+  }
 
-}
+  function deleteBook(id) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(
+        ["books", "readings"], "readwrite"
+      );
+
+      transaction.objectStore("books").delete(id);
+
+      const readings = transaction.objectStore("readings");
+      const index = readings.index("bookId");
+      const cursor = index.openCursor(IDBKeyRange.only(id));
+
+      cursor.onsuccess = () => {
+        const item = cursor.result;
+        if (item) {
+          item.delete();
+          item.continue();
+        }
+      };
+
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  function addReading(reading) {
+    return request("readings", "readwrite", s => s.add(reading));
+  }
+
+  function deleteReading(id) {
+    return request("readings", "readwrite", s => s.delete(id));
+  }
+
+  async function exportData() {
+    return {
+      version: 1,
+      books: await getBooks(),
+      readings: await getReadings()
+    };
+  }
+
+  function importData(data) {
+    if (!data || !Array.isArray(data.books) ||
+        !Array.isArray(data.readings)) {
+      return Promise.reject(new Error("Copia no válida"));
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(
+        ["books", "readings"], "readwrite"
+      );
+
+      const books = transaction.objectStore("books");
+      const readings = transaction.objectStore("readings");
+
+      books.clear();
+      readings.clear();
+
+      data.books.forEach(book => books.put(book));
+      data.readings.forEach(reading => readings.put(reading));
+
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  return {
+    open,
+    getBooks,
+    getReadings,
+    saveBook,
+    deleteBook,
+    addReading,
+    deleteReading,
+    exportData,
+    importData
+  };
+})();
