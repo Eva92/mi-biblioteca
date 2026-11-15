@@ -29,19 +29,38 @@ function safe(value) {
 
 // NAVEGACIÓN
 
-function showSection(sectionId) {
-  document.querySelectorAll(".section").forEach(section => {
-    section.classList.toggle("active", section.id === sectionId);
-  });
 
-  document.querySelectorAll(".tab").forEach(tab => {
-    tab.classList.toggle("active", tab.dataset.tab === sectionId);
-  });
+function showSection(sectionId) {
+  const sections = [
+    "nuevoLibro",
+    "biblioteca",
+    "nuevaLectura",
+    "lecturas",
+    "copias"
+  ];
+
+  if (!sections.includes(sectionId)) {
+    sectionId = "nuevoLibro";
+  }
+
+  window.location.hash = sectionId;
 }
 
-document.querySelectorAll(".tab").forEach(button => {
-  button.addEventListener("click", () => {
-    showSection(button.dataset.tab);
+window.addEventListener("hashchange", () => {
+  const sectionId = location.hash.substring(1) || "nuevoLibro";
+
+  document.querySelectorAll(".section").forEach(section => {
+    section.style.display =
+      section.id === sectionId ? "block" : "none";
+  });
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const sectionId = location.hash.substring(1) || "nuevoLibro";
+
+  document.querySelectorAll(".section").forEach(section => {
+    section.style.display =
+      section.id === sectionId ? "block" : "none";
   });
 });
 
