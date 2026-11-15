@@ -2,220 +2,101 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#ffffff">
-  <title>Mi Biblioteca Kindle</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Biblioteca</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
 <div class="container">
 
-  <header class="header">
-    <h1>MI BIBLIOTECA</h1>
-    <p>Mi diario personal de lecturas</p>
-    <div class="header-total">
-      <strong id="total">0</strong>
-      <span>Libros registrados</span>
-    </div>
-  </header>
+<header>
+  <h1>MI BIBLIOTECA</h1>
+  <p>Registro personal de lecturas</p>
+</header>
 
-  <section class="stats">
-    <div class="stat-card">
-      <h2 id="reading">0</h2>
-      <p>Leyendo</p>
-    </div>
-    <div class="stat-card">
-      <h2 id="finished">0</h2>
-      <p>Terminados</p>
-    </div>
-    <div class="stat-card">
-      <h2 id="pending">0</h2>
-      <p>Pendientes</p>
-    </div>
-  </section>
+<nav>
+  <button id="showBooks" class="active">MI BIBLIOTECA</button>
+  <button id="showYear">LECTURAS DEL AÑO</button>
+</nav>
 
-  <section class="section" id="formSection">
-    <h2 id="formTitle">AÑADIR UN LIBRO</h2>
+<!-- BIBLIOTECA -->
 
-    <form id="bookForm">
+<section id="booksSection">
 
-      <label for="title">Título *</label>
-      <input id="title" type="text" required maxlength="200">
+  <h2>REGISTRAR LIBRO</h2>
 
-      <label for="author">Autor *</label>
-      <input id="author" type="text" required maxlength="150">
+  <form id="bookForm">
 
-      <label for="genre">Género literario</label>
-      <select id="genre">
-        <option value="">Sin especificar</option>
-        <option>Novela</option>
-        <option>Fantasía</option>
-        <option>Ciencia ficción</option>
-        <option>Misterio</option>
-        <option>Romance</option>
-        <option>Historia</option>
-        <option>Biografía</option>
-        <option>Ensayo</option>
-        <option>Filosofía</option>
-        <option>Poesía</option>
-        <option>Desarrollo personal</option>
-        <option>Infantil</option>
-        <option>Otros</option>
-      </select>
+    <label for="title">Título</label>
+    <input id="title" required maxlength="200">
 
-      <label for="publisher">Editorial</label>
-      <input id="publisher" type="text" maxlength="150">
+    <label for="author">Autor</label>
+    <input id="author" required maxlength="150">
 
-      <label for="isbn">ISBN</label>
-      <input id="isbn" type="text" maxlength="20">
-
-      <label for="status">Estado de lectura</label>
-      <select id="status">
-        <option value="Pendiente">Pendiente</option>
-        <option value="Leyendo">Leyendo</option>
-        <option value="Terminado">Terminado</option>
-      </select>
-
-      <label for="totalPages">Número total de páginas</label>
-      <input id="totalPages" type="number" min="0">
-
-      <label for="pagesRead">Páginas leídas</label>
-      <input id="pagesRead" type="number" min="0" value="0">
-
-      <label for="startDate">Fecha de inicio</label>
-      <input id="startDate" type="date">
-
-      <label for="finishDate">Fecha de finalización</label>
-      <input id="finishDate" type="date">
-
-      <label class="check-label">
-        <input type="checkbox" id="approximateDate">
-        La fecha de lectura es aproximada
-      </label>
-
-      <label for="rating">Mi valoración</label>
-      <select id="rating">
-        <option value="0">Sin valorar</option>
-        <option value="1">1 estrella</option>
-        <option value="2">2 estrellas</option>
-        <option value="3">3 estrellas</option>
-        <option value="4">4 estrellas</option>
-        <option value="5">5 estrellas</option>
-      </select>
-
-      <label for="notes">Mis notas y opiniones</label>
-      <textarea id="notes" rows="4" maxlength="5000"
-        placeholder="¿Qué te ha parecido este libro?"></textarea>
-
-      <div class="button-group">
-        <button type="submit" class="primary" id="saveButton">
-          GUARDAR LIBRO
-        </button>
-        <button type="button" id="cancelEdit" hidden>
-          CANCELAR
-        </button>
-      </div>
-
-    </form>
-  </section>
-
-  <section class="section">
-    <h2>MI COLECCIÓN</h2>
-
-    <label for="search">Buscar libro o autor</label>
-    <input id="search" type="search"
-      placeholder="Escribe un título o autor">
-
-    <label for="filter">Filtrar por estado</label>
-    <select id="filter">
-      <option value="Todos">Todos los libros</option>
+    <label for="status">Estado</label>
+    <select id="status">
+      <option value="Pendiente">Pendiente</option>
       <option value="Leyendo">Leyendo</option>
-      <option value="Terminado">Terminados</option>
-      <option value="Pendiente">Pendientes</option>
+      <option value="Terminado">Terminado</option>
     </select>
 
-    <label for="genreFilter">Filtrar por género</label>
-    <select id="genreFilter">
-      <option value="Todos">Todos los géneros</option>
-    </select>
+    <label for="notes">Notas</label>
+    <textarea id="notes" rows="4" maxlength="5000"></textarea>
 
-    <div id="bookList">
-      <p class="empty">Todavía no hay libros registrados.</p>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2>MI HISTORIAL LECTOR</h2>
-
-    <label for="historyYear">Seleccionar año de lectura</label>
-    <select id="historyYear">
-      <option value="Todos">Todos los años</option>
-    </select>
-
-    <div id="historyList"></div>
-  </section>
-
-  <section class="section">
-    <h2>MI PROGRESO LECTOR</h2>
-
-    <p id="progressText">0% de libros terminados</p>
-
-    <div class="progress">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-
-    <p id="progressDetail">0 libros completados</p>
-
-    <div class="extra-stats">
-      <p>📚 Páginas leídas: <strong id="pagesTotal">0</strong></p>
-      <p>⭐ Valoración media: <strong id="averageRating">0</strong></p>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2>COPIAS DE SEGURIDAD</h2>
-
-    <p>Guarda tus libros en un archivo para recuperarlos
-       cuando lo necesites.</p>
-
-    <button type="button" id="exportBtn" class="primary">
-      EXPORTAR MI BIBLIOTECA
+    <button type="submit" class="primary">
+      GUARDAR LIBRO
     </button>
 
-    <label for="importFile">Seleccionar copia de seguridad</label>
-    <input type="file" id="importFile" accept=".json,application/json">
-
-    <button type="button" id="importBtn">
-      IMPORTAR BIBLIOTECA
+    <button type="button" id="cancelEdit" hidden>
+      CANCELAR
     </button>
-  </section>
 
-  <footer>
-    <p>MI BIBLIOTECA PERSONAL</p>
-    <p id="dbStatus">Iniciando base de datos...</p>
-  </footer>
+  </form>
+
+  <h2>LIBROS REGISTRADOS</h2>
+
+  <input id="search" placeholder="Buscar título o autor">
+
+  <div id="bookList"></div>
+
+</section>
+
+<!-- LECTURAS DEL AÑO -->
+
+<section id="yearSection" hidden>
+
+  <h2>LECTURAS DEL AÑO</h2>
+
+  <label for="year">Seleccionar año</label>
+  <select id="year"></select>
+
+  <label for="bookSelector">Seleccionar libro registrado</label>
+  <select id="bookSelector"></select>
+
+  <button id="addYearBook" class="primary">
+    AÑADIR A ESTE AÑO
+  </button>
+
+  <h2>MI HISTORIAL ANUAL</h2>
+
+  <p id="yearTotal">0 libros leídos</p>
+
+  <div id="yearList"></div>
+
+</section>
+
+<footer>
+  <p>MI BIBLIOTECA PERSONAL</p>
+  <p id="dbStatus">Conectando...</p>
+</footer>
 
 </div>
 
 <script src="database.js"></script>
 <script src="app.js"></script>
-<script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", function() {
-        navigator.serviceWorker.register("./sw.js")
-          .then(function() {
-            console.log("Aplicación offline preparada");
-          })
-          .catch(function(error) {
-            console.log("Service Worker no disponible:", error);
-          });
-      });
-    }
-    </script>
-    
 
 </body>
 </html>
