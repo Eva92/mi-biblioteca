@@ -202,6 +202,20 @@
 
 <script src="database.js"></script>
 <script src="app.js"></script>
+<script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("./sw.js")
+          .then(function() {
+            console.log("Aplicación offline preparada");
+          })
+          .catch(function(error) {
+            console.log("Service Worker no disponible:", error);
+          });
+      });
+    }
+    </script>
+    
 
 </body>
 </html>
