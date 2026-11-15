@@ -1,0 +1,332 @@
+
+/* ==================================
+   MI BIBLIOTECA KINDLE
+   Diseño para tinta electrónica
+================================== */
+
+* {
+    box-sizing: border-box;
+  }
+  
+  :root {
+    color-scheme: light;
+  }
+  
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #ffffff;
+    color: #111111;
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.5;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 600px;
+    margin: auto;
+  }
+  
+  /* CABECERA */
+  
+  .header {
+    border: 3px solid #111111;
+    padding: 20px 12px;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  
+  .header h1 {
+    font-size: 27px;
+    margin: 0 0 8px;
+    letter-spacing: 1px;
+  }
+  
+  .header p {
+    margin: 0;
+  }
+  
+  .header-total {
+    margin-top: 15px;
+    border-top: 2px solid #111111;
+    padding-top: 12px;
+  }
+  
+  .header-total strong {
+    display: block;
+    font-size: 35px;
+  }
+  
+  /* ESTADÍSTICAS */
+  
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin-bottom: 15px;
+  }
+  
+  .stat-card {
+    border: 2px solid #111111;
+    text-align: center;
+    padding: 12px 3px;
+  }
+  
+  .stat-card h2 {
+    font-size: 27px;
+    margin: 0;
+  }
+  
+  .stat-card p {
+    font-size: 13px;
+    margin: 4px 0 0;
+  }
+  
+  /* SECCIONES */
+  
+  .section {
+    border: 2px solid #111111;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .section h2 {
+    font-size: 20px;
+    text-align: center;
+    border-bottom: 2px solid #111111;
+    padding-bottom: 9px;
+    margin: 0 0 17px;
+  }
+  
+  /* FORMULARIOS */
+  
+  label {
+    display: block;
+    font-weight: bold;
+    margin: 13px 0 5px;
+  }
+  
+  input,
+  select,
+  textarea {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    border: 2px solid #111111;
+    border-radius: 0;
+    background: #ffffff;
+    color: #111111;
+    padding: 10px;
+    font-size: 17px;
+    font-family: Arial, sans-serif;
+  }
+  
+  textarea {
+    resize: vertical;
+  }
+  
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: 3px solid #555555;
+    outline-offset: 2px;
+  }
+  
+  input[type="checkbox"] {
+    display: inline-block;
+    width: 25px;
+    min-height: 25px;
+    vertical-align: middle;
+    margin: 0 8px 0 0;
+  }
+  
+  .check-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  /* BOTONES */
+  
+  button {
+    width: 100%;
+    min-height: 48px;
+    background: #ffffff;
+    color: #111111;
+    border: 2px solid #111111;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  button.primary {
+    background: #111111;
+    color: #ffffff;
+  }
+  
+  button:active {
+    background: #555555;
+    color: #ffffff;
+  }
+  
+  button[hidden] {
+    display: none;
+  }
+  
+  .button-group {
+    margin-top: 10px;
+  }
+  
+  /* LIBROS */
+  
+  .book {
+    border: 2px solid #111111;
+    padding: 13px;
+    margin: 14px 0;
+    overflow-wrap: anywhere;
+  }
+  
+  .book h3 {
+    font-size: 19px;
+    margin: 0 0 5px;
+  }
+  
+  .book p {
+    margin: 5px 0;
+  }
+  
+  .author {
+    font-style: italic;
+  }
+  
+  .status {
+    display: inline-block;
+    border: 1px solid #111111;
+    padding: 3px 8px;
+    margin: 8px 0;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  
+  .book-info {
+    font-size: 15px;
+  }
+  
+  .stars {
+    font-size: 20px;
+    letter-spacing: 3px;
+    margin: 5px 0;
+  }
+  
+  .notes {
+    border-top: 1px solid #777777;
+    margin-top: 10px;
+    padding-top: 8px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  
+  .book-progress {
+    border: 1px solid #111111;
+    height: 12px;
+    margin: 8px 0;
+  }
+  
+  .book-progress div {
+    height: 100%;
+    background: #111111;
+  }
+  
+  /* ACCIONES */
+  
+  .book-actions {
+    border-top: 1px solid #777777;
+    padding-top: 10px;
+    margin-top: 10px;
+  }
+  
+  .book-actions select {
+    margin-bottom: 7px;
+  }
+  
+  .delete {
+    border-style: double;
+  }
+  
+  /* HISTORIAL */
+  
+  .history-year {
+    border-bottom: 2px solid #111111;
+    padding: 12px 0;
+  }
+  
+  .history-year h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+  }
+  
+  .history-book {
+    padding: 8px 0;
+    border-bottom: 1px solid #aaaaaa;
+  }
+  
+  /* PROGRESO */
+  
+  .progress {
+    height: 18px;
+    border: 2px solid #111111;
+    margin: 12px 0;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    width: 0;
+    background: #111111;
+  }
+  
+  .extra-stats {
+    border-top: 1px solid #777777;
+    margin-top: 12px;
+  }
+  
+  /* MENSAJES */
+  
+  .empty {
+    text-align: center;
+    padding: 20px 5px;
+  }
+  
+  footer {
+    text-align: center;
+    padding: 15px 5px;
+    font-size: 14px;
+  }
+  
+  #dbStatus {
+    font-weight: bold;
+  }
+  
+  /* PANTALLAS PEQUEÑAS */
+  
+  @media (max-width: 380px) {
+    body {
+      padding: 7px;
+      font-size: 16px;
+    }
+  
+    .header h1 {
+      font-size: 23px;
+    }
+  
+    .section {
+      padding: 11px;
+    }
+  
+    .stat-card h2 {
+      font-size: 23px;
+    }
+  }
+  
